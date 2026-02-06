@@ -23,12 +23,13 @@ import {
 export default function DashboardPage() {
     const router = useRouter()
     const [profile, setProfile] = useState<Profile | null>(null)
+    const [standardTracks, setStandardTracks] = useState<any[]>([])
     const [isLoading, setIsLoading] = useState(true)
 
     const supabase = createClient()
 
     useEffect(() => {
-        const loadProfile = async () => {
+        const loadData = async () => {
             const { data: { user } } = await supabase.auth.getUser()
 
             if (!user) {
@@ -36,22 +37,22 @@ export default function DashboardPage() {
                 return
             }
 
-            const { data: profileData } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', user.id)
-                .single()
+            const [profileResult, tracksResult] = await Promise.all([
+                supabase.from('profiles').select('*').eq('id', user.id).single(),
+                supabase.from('standard_tracks').select('*').eq('is_active', true)
+            ])
 
-            if (profileData && !profileData.onboarding_completed) {
+            if (profileResult.data && !profileResult.data.onboarding_completed) {
                 router.push('/onboarding')
                 return
             }
 
-            setProfile(profileData)
+            setProfile(profileResult.data)
+            setStandardTracks(tracksResult.data || [])
             setIsLoading(false)
         }
 
-        loadProfile()
+        loadData()
     }, [router, supabase])
 
     const handleLogout = async () => {
@@ -81,15 +82,15 @@ export default function DashboardPage() {
     ]
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-y-auto">
             {/* Background */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute inset-0 overflow-hidden pointer-events-none fixed">
                 <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-3xl" />
                 <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-3xl" />
             </div>
 
             {/* Header */}
-            <header className="relative z-10 border-b border-white/10 bg-white/5 backdrop-blur-xl">
+            <header className="relative z-10 border-b border-white/10 bg-white/5 backdrop-blur-xl sticky top-0">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
@@ -113,7 +114,7 @@ export default function DashboardPage() {
             </header>
 
             {/* Main */}
-            <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20">
                 {/* Welcome */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -133,7 +134,7 @@ export default function DashboardPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
+                    className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10"
                 >
                     {stats.map((stat, i) => (
                         <motion.div
@@ -156,14 +157,92 @@ export default function DashboardPage() {
                     ))}
                 </motion.div>
 
-                {/* Quick Actions */}
+                {/* Standard Tracks */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="mb-8"
+                    className="mb-10"
                 >
-                    <h2 className="text-xl font-semibold text-white mb-4">Deal Room</h2>
+                    <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                        <Trophy className="w-5 h-5 text-yellow-500" />
+                        Rutas Recomendadas
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {standardTracks.map((track, i) => (
+                            <motion.div
+                                key={track.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 + i * 0.1 }}
+                                whileHover={{ y: -5 }}
+                                className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden group hover:border-purple-500/50 transition-all cursor-pointer"
+                            >
+                                <div className="p-6">
+                                    <div className="flex items-start justify-between mb-4">
+                                        <span className="px-3 py-1 rounded-full bg-white/10 text-white/70 text-xs font-medium">
+                                            {track.industry}
+                                        </span>
+                                        {track.difficulty && (
+                                            <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${track.difficulty === 'easy' ? 'bg-green-500/20 text-green-400' :
+                                                    track.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                        'bg-red-500/20 text-red-400'
+                                                }`}>
+                                                {track.difficulty}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-2 group-hover:text-purple-400 transition-colors">
+                                        {track.title}
+                                    </h3>
+                                    <p className="text-white/60 text-sm mb-6 line-clamp-2">
+                                        {track.description}
+                                    </p>
+                                    <button className="w-full py-3 rounded-xl bg-white/10 text-white font-medium group-hover:bg-purple-500 group-hover:text-white transition-all flex items-center justify-center gap-2">
+                                        <Play className="w-4 h-4" />
+                                        Comenzar Ruta
+                                    </button>
+                                </div>
+                            </motion.div>
+                        ))}
+
+                        {/* Generate Custom AI Track Card */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 + standardTracks.length * 0.1 }}
+                            whileHover={{ y: -5 }}
+                            className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-xl rounded-3xl border border-dashed border-white/20 overflow-hidden hover:border-purple-500 transition-all cursor-pointer relative"
+                        >
+                            <div className="absolute inset-0 bg-white/5 opacity-0 hover:opacity-100 transition-opacity" />
+                            <div className="p-6 h-full flex flex-col items-center justify-center text-center">
+                                <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/30">
+                                    <Zap className="w-8 h-8 text-white" />
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-2">
+                                    Crear Ruta con IA
+                                </h3>
+                                <p className="text-white/60 text-sm mb-6">
+                                    Personalizada para tu objetivo exacto
+                                </p>
+                                <span className="text-purple-400 text-sm font-medium flex items-center gap-1 group">
+                                    Generar ahora <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                </span>
+                            </div>
+                        </motion.div>
+                    </div>
+                </motion.div>
+
+                {/* Quick Actions (Deal Room) */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                >
+                    <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                        <MessageSquare className="w-5 h-5 text-blue-400" />
+                        Simulación Rápida (Deal Room)
+                    </h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {channels.map((channel, i) => (
                             <motion.button
@@ -173,8 +252,8 @@ export default function DashboardPage() {
                                 transition={{ delay: 0.2 + i * 0.05 }}
                                 disabled={!channel.available}
                                 className={`relative p-6 rounded-2xl border transition-all ${channel.available
-                                        ? 'bg-white/5 border-white/10 hover:border-purple-500 hover:bg-white/10 cursor-pointer'
-                                        : 'bg-white/[0.02] border-white/5 cursor-not-allowed opacity-50'
+                                    ? 'bg-white/5 border-white/10 hover:border-purple-500 hover:bg-white/10 cursor-pointer'
+                                    : 'bg-white/[0.02] border-white/5 cursor-not-allowed opacity-50'
                                     }`}
                             >
                                 <div className={`w-12 h-12 rounded-xl ${channel.color} flex items-center justify-center mb-3 mx-auto`}>
