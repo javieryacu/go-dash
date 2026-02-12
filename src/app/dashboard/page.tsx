@@ -25,6 +25,8 @@ export default function DashboardPage() {
     const [profile, setProfile] = useState<Profile | null>(null)
     const [standardTracks, setStandardTracks] = useState<any[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const [isStartingQuickSim, setIsStartingQuickSim] = useState(false)
+    const [isGeneratingTrack, setIsGeneratingTrack] = useState(false)
 
     const supabase = createClient()
 
@@ -60,6 +62,48 @@ export default function DashboardPage() {
         router.push('/login')
     }
 
+    const handleQuickSimulation = async () => {
+        setIsStartingQuickSim(true)
+        try {
+            // Crear simulación rápida con persona genérica
+            const res = await fetch('/api/simulation/quick', {
+                method: 'POST',
+                body: JSON.stringify({ channel: 'whatsapp' })
+            })
+            const data = await res.json()
+            if (data.success) {
+                router.push(`/dashboard/simulation/${data.simulationId}`)
+            }
+        } catch (err) {
+            console.error('Error starting quick simulation:', err)
+        } finally {
+            setIsStartingQuickSim(false)
+        }
+    }
+
+    const handleGenerateAITrack = async () => {
+        if (!profile) return
+        setIsGeneratingTrack(true)
+        try {
+            const res = await fetch('/api/generate-track', {
+                method: 'POST',
+                body: JSON.stringify({
+                    experience_level: profile.experience_level || 'mid',
+                    training_goal: profile.training_goal || 'improve_skill',
+                    industry: 'SaaS B2B'
+                })
+            })
+            const data = await res.json()
+            if (data.success) {
+                router.push(`/dashboard/track/${data.pathId}`)
+            }
+        } catch (err) {
+            console.error('Error generating AI track:', err)
+        } finally {
+            setIsGeneratingTrack(false)
+        }
+    }
+
     if (isLoading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
@@ -89,29 +133,10 @@ export default function DashboardPage() {
                 <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-3xl" />
             </div>
 
-            {/* Header */}
-            <header className="relative z-10 border-b border-white/10 bg-white/5 backdrop-blur-xl sticky top-0">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
-                            <Zap className="w-5 h-5 text-white" />
-                        </div>
-                        <span className="text-xl font-bold text-white">GoDash</span>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <button className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all">
-                            <Settings className="w-5 h-5" />
-                        </button>
-                        <button
-                            onClick={handleLogout}
-                            className="p-2 rounded-lg text-white/60 hover:text-red-400 hover:bg-white/10 transition-all"
-                        >
-                            <LogOut className="w-5 h-5" />
-                        </button>
-                    </div>
-                </div>
-            </header>
+            {/* Header removed - now in Layout */}
+            <div className="absolute top-4 right-4 z-20 md:hidden">
+                {/* Mobile spacer if needed or specific controls */}
+            </div>
 
             {/* Main */}
             <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20">
@@ -185,8 +210,8 @@ export default function DashboardPage() {
                                         </span>
                                         {track.difficulty && (
                                             <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${track.difficulty === 'easy' ? 'bg-green-500/20 text-green-400' :
-                                                    track.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                                                        'bg-red-500/20 text-red-400'
+                                                track.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                    'bg-red-500/20 text-red-400'
                                                 }`}>
                                                 {track.difficulty}
                                             </span>
@@ -198,7 +223,25 @@ export default function DashboardPage() {
                                     <p className="text-white/60 text-sm mb-6 line-clamp-2">
                                         {track.description}
                                     </p>
-                                    <button className="w-full py-3 rounded-xl bg-white/10 text-white font-medium group-hover:bg-purple-500 group-hover:text-white transition-all flex items-center justify-center gap-2">
+                                    <button
+                                        onClick={async (e) => {
+                                            e.stopPropagation() // Prevent div click
+                                            try {
+                                                const res = await fetch('/api/start-track', {
+                                                    method: 'POST',
+                                                    body: JSON.stringify({ trackId: track.id })
+                                                })
+                                                const data = await res.json()
+                                                if (data.success) {
+                                                    // Redirect to Route View NOT Simulation
+                                                    router.push(`/dashboard/track/${data.pathId}`)
+                                                }
+                                            } catch (err) {
+                                                console.error(err)
+                                            }
+                                        }}
+                                        className="w-full py-3 rounded-xl bg-white/10 text-white font-medium group-hover:bg-purple-500 group-hover:text-white transition-all flex items-center justify-center gap-2"
+                                    >
                                         <Play className="w-4 h-4" />
                                         Comenzar Ruta
                                     </button>
@@ -212,22 +255,35 @@ export default function DashboardPage() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2 + standardTracks.length * 0.1 }}
                             whileHover={{ y: -5 }}
+                            onClick={handleGenerateAITrack}
                             className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-xl rounded-3xl border border-dashed border-white/20 overflow-hidden hover:border-purple-500 transition-all cursor-pointer relative"
                         >
                             <div className="absolute inset-0 bg-white/5 opacity-0 hover:opacity-100 transition-opacity" />
                             <div className="p-6 h-full flex flex-col items-center justify-center text-center">
-                                <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/30">
-                                    <Zap className="w-8 h-8 text-white" />
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2">
-                                    Crear Ruta con IA
-                                </h3>
-                                <p className="text-white/60 text-sm mb-6">
-                                    Personalizada para tu objetivo exacto
-                                </p>
-                                <span className="text-purple-400 text-sm font-medium flex items-center gap-1 group">
-                                    Generar ahora <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                </span>
+                                {isGeneratingTrack ? (
+                                    <>
+                                        <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/30">
+                                            <div className="w-8 h-8 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-white mb-2">Generando con IA...</h3>
+                                        <p className="text-white/60 text-sm">Esto puede tomar unos segundos</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/30">
+                                            <Zap className="w-8 h-8 text-white" />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-white mb-2">
+                                            Crear Ruta con IA
+                                        </h3>
+                                        <p className="text-white/60 text-sm mb-6">
+                                            Personalizada para tu objetivo exacto
+                                        </p>
+                                        <span className="text-purple-400 text-sm font-medium flex items-center gap-1 group">
+                                            Generar ahora <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                        </span>
+                                    </>
+                                )}
                             </div>
                         </motion.div>
                     </div>
@@ -250,14 +306,19 @@ export default function DashboardPage() {
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: 0.2 + i * 0.05 }}
-                                disabled={!channel.available}
+                                disabled={!channel.available || isStartingQuickSim}
+                                onClick={() => channel.available && handleQuickSimulation()}
                                 className={`relative p-6 rounded-2xl border transition-all ${channel.available
                                     ? 'bg-white/5 border-white/10 hover:border-purple-500 hover:bg-white/10 cursor-pointer'
                                     : 'bg-white/[0.02] border-white/5 cursor-not-allowed opacity-50'
                                     }`}
                             >
                                 <div className={`w-12 h-12 rounded-xl ${channel.color} flex items-center justify-center mb-3 mx-auto`}>
-                                    <channel.icon className="w-6 h-6 text-white" />
+                                    {isStartingQuickSim && channel.available ? (
+                                        <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <channel.icon className="w-6 h-6 text-white" />
+                                    )}
                                 </div>
                                 <p className="text-white font-medium text-center">{channel.name}</p>
                                 {!channel.available && (
@@ -289,10 +350,16 @@ export default function DashboardPage() {
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold shadow-lg shadow-purple-500/25"
+                            onClick={handleQuickSimulation}
+                            disabled={isStartingQuickSim}
+                            className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold shadow-lg shadow-purple-500/25 disabled:opacity-50"
                         >
-                            <Play className="w-5 h-5" />
-                            Comenzar Simulación
+                            {isStartingQuickSim ? (
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                <Play className="w-5 h-5" />
+                            )}
+                            {isStartingQuickSim ? 'Preparando...' : 'Comenzar Simulación'}
                             <ChevronRight className="w-5 h-5" />
                         </motion.button>
                     </div>

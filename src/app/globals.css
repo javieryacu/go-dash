@@ -1,26 +1,108 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  /* LIGHT MODE (Default based on spec) */
+  --background: #FAFAFA;
+  /* neutral-50 */
   --foreground: #171717;
+  /* neutral-900 */
+
+  /* Primary - Blue */
+  --primary: #3B82F6;
+  --primary-foreground: #FFFFFF;
+  --primary-hover: #2563EB;
+
+  /* Secondary */
+  --secondary: #FFFFFF;
+  --secondary-foreground: #3B82F6;
+
+  /* Accents */
+  --accent: #F5F5F5;
+  /* neutral-100 */
+  --accent-foreground: #171717;
+
+  /* Cards & Surfaces */
+  --card: #FFFFFF;
+  --card-foreground: #171717;
+  --popover: #FFFFFF;
+  --popover-foreground: #171717;
+
+  /* Borders */
+  --border: #E5E5E5;
+  /* neutral-200 */
+  --input: #E5E5E5;
+  --ring: #3B82F6;
+  /* primary-500 */
+
+  /* Radius */
+  --radius: 0.5rem;
+
+  /* Semantic Colors from Spec */
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --info: #3B82F6;
+}
+
+/* DARK MODE (Class-based via next-themes) */
+.dark {
+  /* Premium Dark override */
+  --background: #0f172a;
+  /* slate-900 */
+  --foreground: #f8fafc;
+  /* slate-50 */
+
+  /* Primary - Adjusted for dark */
+  --primary: #8b5cf6;
+  /* purple-500 for that neon premium feel */
+  --primary-foreground: #FFFFFF;
+  --primary-hover: #7c3aed;
+
+  /* Secondary */
+  --secondary: #1e293b;
+  /* slate-800 */
+  --secondary-foreground: #f8fafc;
+
+  /* Accents */
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
+
+  /* Cards */
+  --card: rgba(255, 255, 255, 0.05);
+  /* Glassmorphism base */
+  --card-foreground: #f8fafc;
+  --popover: #0f172a;
+  --popover-foreground: #f8fafc;
+
+  /* Borders */
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: #8b5cf6;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+.dark body {
+  background: radial-gradient(circle at top center, #581c87 0%, #0f172a 50%, #0f172a 100%);
+  background-attachment: fixed;
 }

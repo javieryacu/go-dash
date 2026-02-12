@@ -1,13 +1,31 @@
 import { generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import { getModel } from '../ai-config';
 import { z } from 'zod';
 
-// Schema for Theory Content
-const TheoryContentSchema = z.object({
+// Schema for Gamified Micro-Learning (Story)
+const StoryContentSchema = z.object({
     title: z.string(),
-    concept_explanation: z.string().describe('Explicación clara del concepto en 2-3 párrafos'),
-    real_world_example: z.string().describe('Un ejemplo práctico aplicado a la industria del usuario'),
-    key_takeaways: z.array(z.string()).describe('3 puntos clave para recordar')
+    emoji: z.string().describe('Un emoji representativo del tema'),
+    hook: z.object({
+        text: z.string().describe('Pregunta o afirmación provocadora que capture la atención inmediata (max 140 chars)'),
+        emoji: z.string().describe('Emoji para el hook')
+    }),
+    story: z.object({
+        context: z.string().describe('Breve intro de la situación (2 líneas)'),
+        problem: z.string().describe('El conflicto o error común (2-3 líneas)'),
+        solution: z.string().describe('La técnica o solución aplicada (2-3 líneas)'),
+        character: z.string().describe('Nombre de un personaje ficticio para la historia (ej: "Juan el Vendedor")')
+    }),
+    versus: z.object({
+        wrong_way: z.string().describe('Lo que hace la mayoría (forma incorrecta)'),
+        right_way: z.string().describe('Lo que hacen los top performers (forma correcta)')
+    }),
+    interactive_challenge: z.object({
+        question: z.string().describe('Pregunta de reflexión rápida para el usuario'),
+        options: z.array(z.string()).describe('2 opciones breve para elegir'),
+        correct_option_index: z.number()
+    }),
+    key_takeaway: z.string().describe('La lección en 1 frase memorable (tweet-style)')
 });
 
 // Schema for Drill Content
@@ -33,27 +51,38 @@ const SimulationScenarioSchema = z.object({
 });
 
 export class ProducerAgent {
-    private model = openai('gpt-4-turbo');
+    private model = getModel('passive');
 
     async generateTheory(topic: string, industry: string, level: string) {
         const prompt = `
-      Actúa como Instructor de Ventas Experto en ${industry}.
-      Genera una micro-lección teórica sobre: "${topic}".
+      Actúa como un Coach de Ventas Top Performer en ${industry} que crea contenido viral para redes sociales (estilo TikTok/LinkedIn).
+      
+      Tu objetivo: Enseñar "${topic}" usando el método "Micro-Learning Gamificado".
       Nivel del usuario: ${level}.
       
-      Enfoque: B2C / Venta Directa si aplica (Retail, Restaurantes, etc).
-      Tono: Práctico, directo, sin relleno corporativo.
+      Estructura OBLIGATORIA:
+      1. HOOK: Algo que detenga el scroll. Emocional o curioso.
+      2. STORY: Una mini-historia de fracaso -> éxito. Usa un personaje.
+      3. VS: Comparación brutal entre "Novato" vs "Pro".
+      4. CHALLENGE: Un reto mental rápido.
+      
+      Tono:
+      - Usa emojis estratégicos 🔥🚀💡
+      - Sé directo, usa lenguaje natural (no corporativo).
+      - Provocador pero educativo.
+      - "Tú" en lugar de "Usted".
     `;
 
         const { object } = await generateObject({
             model: this.model,
-            schema: TheoryContentSchema,
+            schema: StoryContentSchema,
             prompt,
-            temperature: 0.7
+            temperature: 0.8 // Más creativo
         });
 
         return object;
     }
+    // ... existing methods ...
 
     async generateDrill(topic: string, industry: string) {
         const prompt = `

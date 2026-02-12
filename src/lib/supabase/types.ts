@@ -56,6 +56,7 @@ export interface SyllabusModule {
     duration_minutes: number
     content_type: 'theory' | 'drill' | 'simulation'
     completed: boolean
+    content?: any // Can hold TheoryContent or SimulationScenario depending on type
 }
 
 export interface Simulation {
@@ -136,6 +137,7 @@ export interface StandardTrack {
     difficulty: SimulationDifficulty
     syllabus_template: SyllabusModule[]
     is_active: boolean
+    content_generation_mode: 'static' | 'dynamic'
     created_at: string
     updated_at: string
 }

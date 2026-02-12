@@ -1,5 +1,5 @@
 import { generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import { getModel } from '../ai-config';
 import { z } from 'zod';
 import type { ExperienceLevel, TrainingGoal } from '@/lib/supabase/types';
 
@@ -26,7 +26,7 @@ interface ArchitectParams {
 }
 
 export class ArchitectAgent {
-    private model = openai('gpt-4-turbo'); // Usamos un modelo capaz de razonamiento estructurado
+    private model = getModel('passive'); // Modelo pasivo (Gemini) para generación de contenido
 
     async generateSyllabus({ experience_level, training_goal, industry }: ArchitectParams): Promise<Syllabus> {
         const prompt = `
