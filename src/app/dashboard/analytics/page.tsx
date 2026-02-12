@@ -67,11 +67,11 @@ export default function AnalyticsPage() {
 
             setData({
                 total_simulations: profile?.total_simulations || completedSims.length,
-                avg_overall_score: avg(completedSims.map(s => s.overall_score || 0)),
-                avg_discovery_score: avg(completedSims.map(s => s.discovery_score || 0)),
-                avg_qualification_score: avg(completedSims.map(s => s.qualification_score || 0)),
-                avg_objection_score: avg(completedSims.map(s => s.objection_handling_score || 0)),
-                avg_closing_score: avg(completedSims.map(s => s.closing_score || 0)),
+                avg_overall_score: avg(completedSims.map((s: any) => s.overall_score || 0)),
+                avg_discovery_score: avg(completedSims.map((s: any) => s.discovery_score || 0)),
+                avg_qualification_score: avg(completedSims.map((s: any) => s.qualification_score || 0)),
+                avg_objection_score: avg(completedSims.map((s: any) => s.objection_handling_score || 0)),
+                avg_closing_score: avg(completedSims.map((s: any) => s.closing_score || 0)),
                 whatsapp_count: completedSims.filter(s => s.channel === 'whatsapp').length,
                 email_count: completedSims.filter(s => s.channel === 'email').length,
                 phone_count: completedSims.filter(s => s.channel === 'phone').length,

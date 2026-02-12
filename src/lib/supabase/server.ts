@@ -2,15 +2,13 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 export async function createClient() {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co'
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key'
 
-    if (!url || !key) {
-        if (process.env.NODE_ENV === 'production' && !url) {
-            console.warn('Supabase env vars missing during server execution')
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_SUPABASE_URL) {
+            console.warn('Supabase server client initialized with dummy values.')
         }
-        // Return a dummy client if we're in build phase
-        return null as any
     }
 
     const cookieStore = await cookies()
